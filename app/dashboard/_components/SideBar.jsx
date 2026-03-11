@@ -1,5 +1,6 @@
 "use client";
 
+import { Progress } from "../../../components/ui/progress";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -44,7 +45,7 @@ function SideBar() {
           return (
             <Link href={item.path}>
               <div
-                className={`flex items-center gap-2 text-gray-600 p-3 cursor-pointer hover:bg-gray-100 hover:text-black rounded-lg ${item.path == path && "bg-gray-200 text-black"}`}
+                className={`flex items-center gap-2 text-gray-600 p-3 cursor-pointer hover:bg-gray-100 hover:text-black rounded-lg mb-3 ${item.path == path && "bg-gray-200 text-black"}`}
               >
                 <div className="text-3xl">{item.icon}</div>
                 <h2>{item.name}</h2>
@@ -53,6 +54,13 @@ function SideBar() {
           );
         })}
       </ul>
+      <div className="absolute bottom-10 w-[80%]">
+        <Progress value={33} />
+        <h2 className="text-sm my-2">2 out of 5 Courses completed</h2>
+        <h2 className="text-xs text-gray-500">
+          Upgrade your plan for unlimited course generate
+        </h2>
+      </div>
     </div>
   );
 }

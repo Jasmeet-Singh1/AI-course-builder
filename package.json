@@ -9,6 +9,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.38.3",
+    "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-select": "^2.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",

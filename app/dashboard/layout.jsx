@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }) {
       </div>
       <main className="flex-1 min-h-screen  p-10 md">
         <Header />
-        {children}
+        <div className="p-10">{children}</div>
       </main>
     </div>
   );
