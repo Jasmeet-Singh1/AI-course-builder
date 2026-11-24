@@ -25,6 +25,8 @@ try {
 }
 
 const cmd = String((input.tool_input || {}).command || "");
+// Disclosed escape hatch: a user-approved push to main/master must say so in the command itself.
+const mainPushApproved = /CLAUDE_ALLOW_MAIN_PUSH\s*=\s*['"]?1/.test(cmd);
 
 const deny = [
   [/\brm\s+-[a-z]*r[a-z]*f|\brm\s+-[a-z]*f[a-z]*r/i, "Recursive force delete (rm -rf) is blocked."],
@@ -38,7 +40,10 @@ const deny = [
   [/(curl|iwr|Invoke-WebRequest|wget)\b[^|]*\|\s*(sh|bash|iex|Invoke-Expression)/i, "Piping a download into a shell is blocked."],
 ];
 for (const [re, reason] of deny) {
-  if (re.test(cmd)) decide("deny", reason);
+  if (re.test(cmd)) {
+    if (mainPushApproved && reason.startsWith("Pushing directly to main/master")) continue;
+    decide("deny", reason);
+  }
 }
 
 if (/\bnpm\s+(i|install|add)\s+\S/i.test(cmd)) {

@@ -17,6 +17,7 @@ Standing rules for every session in this repo. When rules conflict, follow the D
 Security > AI-output correctness > Tech Strategy > Core Directives > Skill conventions > Local judgment.
 
 ## Output Standards
+- **Pushes to master:** blocked by `command-guard.js`. Only when the user explicitly approves a direct push, prefix it with `$env:CLAUDE_ALLOW_MAIN_PUSH='1';`, and say so in the reply.
 - **Commits:** imperative subject ≤ 72 chars (`Move Gemini call to server route`). The body says why.
 - **Specs and handoffs:** always reference the artifact path, so the next agent or person can pick up from the file alone.
 - **Correction capture:** when the user corrects a behaviour that contradicts a rule here, append one line to `scratchpad/corrections.log` in the form `YYYY-MM-DD | correction | which rule/file`. `/land-the-plane` reviews these entries and proposes rule updates.
