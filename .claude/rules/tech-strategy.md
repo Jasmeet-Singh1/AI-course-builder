@@ -12,14 +12,14 @@ Use what is listed here. If a task seems to need something else, say so in the s
 | Auth | Clerk (`@clerk/nextjs`) | Server: `auth()` / `currentUser()` from `@clerk/nextjs/server` |
 | AI | `@google/generative-ai`, model `gemini-2.5-flash`, JSON mode | All calls belong on the server (see `security.md`) |
 | Storage | `lib/courseStore.js` → `data/courses.json` | Prototype only. The next step is Postgres. Keep all storage access behind `courseStore` functions so swapping is one file |
-| Validation (preferred) | `zod` | Add it when the first schema-validation task lands |
-| Tests (preferred) | Vitest | Add it with the first test task. Update `CLAUDE.md` Quick Reference when you do |
+| Validation | Hand-written in `lib/courseSchema.js` | No dependency needed at this size. Consider `zod` if schemas multiply |
+| Tests | Vitest (`npm test`), files in `tests/` | AI calls are tested with an injected `callModel` fake, never the network |
 
 ## Environment Variables
 | Name | Scope | Purpose |
 |---|---|---|
-| `GEMINI_API_KEY` | server only | Gemini API key (target state) |
-| `NEXT_PUBLIC_GEMINI_API_KEY` | **public, being retired** | Current client-side key. Do not add new uses |
+| `GEMINI_API_KEY` | server only | Gemini API key, read in `lib/courseGenerator.js` |
+| `NEXT_PUBLIC_GEMINI_API_KEY` | **legacy name, being retired** | Read server-side only as a fallback until `.env.local` is renamed. Never reference it in client code |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | public / server | Clerk |
 
 Never read, print or edit `.env*` files. Ask the user to change env values.

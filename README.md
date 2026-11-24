@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AI Course Builder
 
-## Getting Started
+A Next.js app where a signed-in user describes a course, and Google Gemini returns a structured course outline. The server **validates the outline before anyone sees it**. The user then reads it chapter by chapter and saves it to their account.
 
-First, run the development server:
+The project is also set up for **agentic development** with Claude Code. Written rules, task specs, worker agents with limited permissions, guardrail hooks and an evaluation runner decide what AI-written code and AI-generated content are accepted.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How it works
+
+```
+3-step form ──► POST /api/generate ──► Gemini (JSON mode) ──► validate ──┐
+ (category,      auth · input limits     delimited prompt         │ fail: retry once
+  topic, level,  · rate limit (5/min)                             │ with the errors
+  chapters)                                                       ▼
+                                                   still invalid → labelled fallback
+                                                                  │
+preview (CourseReader) ◄──────────────────────────────────────────┘
+      │ Save
+      ▼
+POST /api/courses ── auth · validateCourse ──► lib/courseStore.js ──► data/courses.json
+dashboard ── GET /api/courses (scoped to the signed-in user)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Concern | File |
+|---|---|
+| Auth (Clerk) | `middleware.js`, plus `auth()` inside every API route |
+| Form + shared state | `app/create-course/*`, `app/_context/UserInputContext.jsx` |
+| Generation endpoint | `app/api/generate/route.js` |
+| Prompt, Gemini call, retry (server-only) | `lib/courseGenerator.js` |
+| Input limits + output schema | `lib/courseSchema.js` |
+| Labelled fallback outline | `lib/fallbackCourse.js` |
+| Save / list / read courses | `app/api/courses/*`, `lib/courseStore.js` |
+| Reader UI | `app/_components/CourseReader.jsx` |
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Guarantees
+- **The API key never reaches the browser.** Gemini is called only on the server. A build check confirmed no key, SDK or API host appears in `.next/static`.
+- **No unvalidated AI output.** Every outline is checked for required non-empty fields and the exact chapter count the user asked for. Anything else is retried once and then replaced by a template that is clearly labelled as a fallback.
+- **Users only see their own data.** Every read filters by the signed-in `userId`.
+- **Bounded cost.** Chapters are limited to 1–20, topic and description lengths are capped, and each user can generate 5 courses per minute.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Run it
 
-## Learn More
+```bash
+npm install
+# .env.local needs: GEMINI_API_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY
+npm run dev          # http://localhost:3000
+npm test             # unit tests (Vitest)
+npm run build        # production build
+npm run eval -- my-label   # run the prompt/model eval (calls Gemini, writes artifacts/evals/)
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Agentic workflow (Claude Code)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Layer | Where | What it does |
+|---|---|---|
+| Rules | `CLAUDE.md`, `.claude/rules/` | Standing instructions: security, AI-output contract, code quality, debugging. `ai-output.md` loads only for AI and API code |
+| Skills | `.claude/skills/` | `/spec` → `/review` → `/land-the-plane`, plus `/eval-prompt` |
+| Worker agents | `.claude/agents/` | explorer (haiku, read-only), builder (sonnet, edits), reviewer (sonnet, read-only). Each has a turn limit and none can start other agents |
+| Hooks | `.claude/hooks/*.js` | Block writes to `.env` and user data, flag key-like strings and public key variables, block destructive git and shell commands, re-orient the agent each session |
+| Hard denies | `.claude/settings.json` | Agent can't read or write `.env*` or `data/`, and can't run `rm -rf`, force push or `reset --hard` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Each change goes through: **spec with acceptance tests → build → adversarial review → finish-line checks**. Records are kept in `artifacts/`: specs, the decision log and eval reports.
 
-## Deploy on Vercel
+## Evaluation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`artifacts/evals/` holds the fixed test cases and dated reports. On 2026-11-24 the old prompt passed **6 of 8** cases: it returned malformed JSON for the 20-chapter case and for a prompt-injection case. The current pipeline passed **8 of 8**, using one retry in total, at about the same latency. See `artifacts/evals/eval_2026-11-24_server-validation.md`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Known limitations
+- Storage is a JSON file, which is fine for a prototype but not safe for concurrent writes or serverless hosting. All storage access goes through `lib/courseStore.js`, so moving to Postgres or BigQuery means changing one file.
+- The rate limiter is in-memory: it resets on restart and isn't shared across instances.
+- The "Add Video" option is collected but not used yet.

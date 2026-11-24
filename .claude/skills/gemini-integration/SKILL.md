@@ -6,9 +6,11 @@ description: Use when adding or changing a Gemini prompt, model setting, or AI-g
 # Gemini Integration
 
 ## Where it lives
-- Model and prompt: `configs/AiModel.jsx` (`generateCourse_AI`, `buildFallbackCourse`).
-- Caller: `GenerateCourseLayout` in `app/create-course/page.jsx`.
-- Target state: the call moves to a server route (`app/api/generate/route.js`) using `GEMINI_API_KEY`, behind `auth()`.
+- Model, prompt, retry: `lib/courseGenerator.js` (`buildPrompt`, `generateCourse`). Server-only.
+- Schema and input limits: `lib/courseSchema.js` (`normalizeInput`, `validateCourse`).
+- Fallback: `lib/fallbackCourse.js` (`buildFallbackCourse`).
+- HTTP entry: `app/api/generate/route.js` (auth, 400 on bad input, 429 rate limit). The client page only calls this route.
+- Tests: `tests/courseGenerator.test.js` uses a fake `callModel`. Eval: `npm run eval -- <label>`.
 
 ## Pattern
 1. Build the prompt with user input inside delimiters, e.g. `<topic>...</topic>`.

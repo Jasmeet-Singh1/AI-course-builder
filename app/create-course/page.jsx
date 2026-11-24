@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HiMiniSquares2X2 } from "react-icons/hi2";
 import { HiLightBulb } from "react-icons/hi";
@@ -10,7 +10,6 @@ import SelectCategory from "./_components/SelectCategory";
 import TopicDescription from "./_components/TopicDescription";
 import SelectOption from "./_components/SelectOption";
 import { UserInputContext } from "../_context/UserInputContext";
-import { buildFallbackCourse, generateCourse_AI } from "../../configs/AiModel";
 
 function CreateCourse() {
   const router = useRouter();
@@ -38,10 +37,6 @@ function CreateCourse() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState("");
-
-  useEffect(() => {
-    console.log("userCourseInput", userCourseInput);
-  }, [userCourseInput]);
 
   // Used to check Next button is disabled or not
   const checkStatus = () => {
@@ -75,21 +70,32 @@ function CreateCourse() {
     setIsGenerating(true);
     setGenerateError("");
     try {
-      let courseData;
-      try {
-        const response = await generateCourse_AI(userCourseInput);
-        const cleaned = response.replace(/```json|```/g, "").trim();
-        courseData = JSON.parse(cleaned);
-      } catch (error) {
-        console.error(error);
-        courseData = buildFallbackCourse(userCourseInput);
+      // The server calls Gemini, validates the output, retries once, and falls back
+      // to a labelled outline if it still fails. The API key never reaches the browser.
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: userCourseInput }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        setGenerateError("Sign in before generating a course.");
+        return;
+      }
+      if (!response.ok) {
+        const details = Array.isArray(data.details) ? ` (${data.details.join(", ")})` : "";
+        setGenerateError(`${data.error || "Could not build a course"}${details}`);
+        return;
       }
 
-      setGeneratedCourse(courseData);
+      // Keep the cleaned input (e.g. clamped chapter count) so the saved record matches.
+      if (data.input) setUserCourseInput((prev) => ({ ...prev, ...data.input }));
+      setGeneratedCourse(data.course);
       router.push("/create-course/preview");
     } catch (error) {
       console.error(error);
-      setGenerateError("Could not build a course. Try again.");
+      setGenerateError("Could not reach the server. Check your connection and try again.");
     } finally {
       setIsGenerating(false);
     }
