@@ -38,4 +38,4 @@ Note: an invalid baseline answer would have been shown/saved as-is by the old co
 ## Conclusion
 The review fixes (escaped delimiter, whitelisted inputs, known-field projection, outer-fence-only parsing, timeout) did not hurt quality: the candidate passed 8 of 8 with no retries.
 
-**Across both runs:** baseline 14/16 (88%), candidate 16/16 (100%). The baseline failed **different cases in each run**: max-chapters and adversarial in run 1, py-beginner-5 in run 2. Every failure was malformed JSON. So the failures are random rather than tied to particular inputs, and that's why validate-and-retry is needed instead of more prompt tweaking.
+**Across both runs:** baseline 13/16 (81%: 6/8 then 7/8), candidate 16/16 (100%). (Corrected: an earlier version of this line and commit fb7c89c said 14/16.) The baseline failed **different cases in each run**: max-chapters and adversarial in run 1, py-beginner-5 in run 2. Every failure was malformed JSON. So the failures are random rather than tied to particular inputs, and that's why validate-and-retry is needed instead of more prompt tweaking.
