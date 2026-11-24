@@ -40,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# saved courses
+/data
+
+# agent workflow: ephemeral notes and per-machine settings
+/scratchpad
+.claude/settings.local.json

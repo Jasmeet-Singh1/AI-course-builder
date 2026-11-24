@@ -5,11 +5,17 @@ import Header from "../dashboard/_components/Header";
 import { UserInputContext } from "../_context/UserInputContext";
 
 function CreateCourseLayout({ children }) {
-  const [userCourseInput, setUserCourseInput] = useState();
+  const [userCourseInput, setUserCourseInput] = useState({});
+  const [generatedCourse, setGeneratedCourse] = useState(null);
   return (
     <div>
       <UserInputContext.Provider
-        value={{ userCourseInput, setUserCourseInput }}
+        value={{
+          userCourseInput,
+          setUserCourseInput,
+          generatedCourse,
+          setGeneratedCourse,
+        }}
       >
         <>
           <Header />

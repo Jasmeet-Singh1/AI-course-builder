@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React from "react";
 
 function Hero() {
@@ -23,12 +24,12 @@ function Hero() {
           </p>
 
           <div className="mt-4 flex justify-center gap-4 sm:mt-6">
-            <a
+            <Link
               className="inline-block rounded border border-primary bg-primary px-5 py-3 font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
-              href="#"
+              href="/dashboard"
             >
               Get Started
-            </a>
+            </Link>
           </div>
         </div>
       </div>

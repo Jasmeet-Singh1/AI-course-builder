@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { HiMiniSquares2X2 } from "react-icons/hi2";
 import { HiLightBulb } from "react-icons/hi";
 import { HiClipboardDocumentList } from "react-icons/hi2";
@@ -9,9 +10,10 @@ import SelectCategory from "./_components/SelectCategory";
 import TopicDescription from "./_components/TopicDescription";
 import SelectOption from "./_components/SelectOption";
 import { UserInputContext } from "../_context/UserInputContext";
-import { generateCourse_AI } from "../../configs/AiModel";
+import { buildFallbackCourse, generateCourse_AI } from "../../configs/AiModel";
 
 function CreateCourse() {
+  const router = useRouter();
   const stepperOptions = [
     {
       id: 1,
@@ -30,9 +32,12 @@ function CreateCourse() {
     },
   ];
 
-  const { userCourseInput, setUserCourseInput } = useContext(UserInputContext);
+  const { userCourseInput, setUserCourseInput, setGeneratedCourse } =
+    useContext(UserInputContext);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
 
   useEffect(() => {
     console.log("userCourseInput", userCourseInput);
@@ -67,18 +72,27 @@ function CreateCourse() {
   };
 
   const GenerateCourseLayout = async () => {
-    // const BASIC_PROMPT =
-    //   "Generate A Course Tutorial on Following Detail With field as Course Name, Description, Along with Chapter Name, about, Duration:";
-    // const USER_INPUT_PROMPT = `Category: ${userCourseInput?.category}, Topic: ${userCourseInput?.topic}, Level: ${userCourseInput?.level}, Duration: ${userCourseInput?.duration}, NoOf Chapters: ${userCourseInput?.chapters}, in JSON format`;
+    setIsGenerating(true);
+    setGenerateError("");
+    try {
+      let courseData;
+      try {
+        const response = await generateCourse_AI(userCourseInput);
+        const cleaned = response.replace(/```json|```/g, "").trim();
+        courseData = JSON.parse(cleaned);
+      } catch (error) {
+        console.error(error);
+        courseData = buildFallbackCourse(userCourseInput);
+      }
 
-    // const FINAL_PROMPT = BASIC_PROMPT + USER_INPUT_PROMPT;
-
-    const response = await generateCourse_AI(userCourseInput);
-    const cleaned = response.replace(/```json|```/g, "");
-
-    const courseData = JSON.parse(cleaned);
-
-    console.log(courseData);
+      setGeneratedCourse(courseData);
+      router.push("/create-course/preview");
+    } catch (error) {
+      console.error(error);
+      setGenerateError("Could not build a course. Try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
   return (
     <div>
@@ -139,13 +153,16 @@ function CreateCourse() {
 
           {activeIndex === 2 && (
             <Button
-              disabled={checkStatus()}
+              disabled={checkStatus() || isGenerating}
               onClick={() => GenerateCourseLayout()}
             >
-              Generate Course
+              {isGenerating ? "Generating..." : "Generate Course"}
             </Button>
           )}
         </div>
+        {generateError && (
+          <p className="mt-4 text-sm text-red-600">{generateError}</p>
+        )}
       </div>
     </div>
   );

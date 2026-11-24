@@ -14,7 +14,8 @@ function AddCourse() {
           Hello, <span className="font-bold">{user?.fullName}</span>
         </h2>
         <p className="text-sm text-gray-500">
-          Create new course with AI, Share with friends and Earn from it
+          Finished courses are saved to{" "}
+          {user?.primaryEmailAddress?.emailAddress || "your Google account"}
         </p>
       </div>
       <Link href={"/create-course"}>
